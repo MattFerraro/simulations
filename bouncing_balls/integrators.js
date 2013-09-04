@@ -11,27 +11,27 @@ function euler(x_hat, dt)
 	//console.log("Euler Finished!"); 
 }
 
-function rk4(x_vector, dt)
+function rk4(x_hat, dt)
 {
 	//find the increment based on euler's method
-	k1 = x_vector.getDeriv();
+	k1 = x_hat.getDeriv();
 	
 	//imagine euler is correct, but only go to the midpoint of the step
 	//then grab the derivative there
-	x_vector.add(k1, dt/2);
-	k2 = x_vector.getDeriv();
+	x_hat.add(k1, dt/2);
+	k2 = x_hat.getDeriv();
 	
 	//now rewind what we just did, then use k2's slope:
-	x_vector.add(k1, -dt/2);//rewinds what we just did
-	x_vector.add(k2, dt/2);//step to the midpoint again, but with
+	x_hat.add(k1, -dt/2);//rewinds what we just did
+	x_hat.add(k2, dt/2);//step to the midpoint again, but with
 	//fore-knowledge of what the midpoint's slop is going to look like!
-	k3 = x_vector.getDeriv();
+	k3 = x_hat.getDeriv();
 	
-	x_vector.add(k2, -dt/2);//rewind to the start again
-	x_vector.add(k3, dt);//ff to the end!
-	k4 = x_vector.getDeriv();
+	x_hat.add(k2, -dt/2);//rewind to the start again
+	x_hat.add(k3, dt);//ff to the end!
+	k4 = x_hat.getDeriv();
 	
-	x_vector.add(k3, -dt);//rewind one last time
+	x_hat.add(k3, -dt);//rewind one last time
 	
 	final_increment = new Array();
 	for(var i = 0;i<k1.length;i++)
@@ -40,5 +40,5 @@ function rk4(x_vector, dt)
 	}
 	
 	
-	x_vector.add(final_increment, dt);
+	x_hat.add(final_increment, dt);
 }
