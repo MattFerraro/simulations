@@ -1,5 +1,7 @@
 var all_particles = new Array();
 var gravity = -9.8;
+var maxX = 800;
+var maxY = 600;
 
 function init()
 {
@@ -8,8 +10,6 @@ function init()
 	graphix_init(b_canvas, all_particles)
 	
 	// Next initialize the state vector
-	var maxX = 800;
-	var maxY = 600;
 	var k = 1;
 	
 	var num_particles = 16;
@@ -17,9 +17,9 @@ function init()
 	{
 		var particle = new Object();
 		particle.x = a * 20 + maxX / 2;
-		particle.y = 10;
-		particle.dx = 0;
-		particle.dy = 0;
+		particle.y = 10 + a;
+		particle.dx = 40;
+		particle.dy = 20;
 		particle.r = 8;
 		particle.type = 1;
 		particle.m = 10;
@@ -67,8 +67,8 @@ function init()
 
 	all_particles[0].type = 2;
 	
-	setInterval(draw, 20);
-	setInterval(update, 10);
+	setInterval(draw, 40);
+	setInterval(update, 1);
 	// update();
 }
 
@@ -130,7 +130,7 @@ function update_particles()
 	// As you can see, we dispatch the hard work to the integrators.js file
 	flattened = flatten(all_particles);
 	// console.log(flattened);
-	new_x_hat = rk4(flattened, generate_derivative, .1);
+	new_x_hat = rk4(flattened, generate_derivative, .019);
 	// console.log(new_x_hat);
 	expand(new_x_hat, all_particles);
 }
@@ -150,6 +150,7 @@ function distance(particleA, particleB)
 // 	return thisPoint;
 // }
 
+var repulsive_coeff = 10000;
 
 function generate_derivative(x_hat)
 {
@@ -157,13 +158,44 @@ function generate_derivative(x_hat)
 	var index = 0;
 	while (index < x_hat.length)
 	{
-		particle_x =  x_hat[index];
-		particle_dx = x_hat[index+1];
-		particle_ddx = 0;
+		var particle_x =  x_hat[index];
+		var particle_dx = x_hat[index+1];
+		var particle_ddx = 0;
 
-		particle_y =  x_hat[index+2];
-		particle_dy = x_hat[index+3];
-		particle_ddy = -gravity;
+		var particle_y =  x_hat[index+2];
+		var particle_dy = x_hat[index+3];
+		var particle_ddy = -gravity
+
+
+		// There is a force-field at the bottom of the screen
+		// We simulate it as a repulsive force that scales as 1/r^4
+		var dist_from_bottom = maxY - particle_y;
+		if (dist_from_bottom < 10)
+		{
+			var repulsive_force = repulsive_coeff / (dist_from_bottom * dist_from_bottom);
+			particle_ddy -= repulsive_force;
+		}
+
+		var dist_from_right = maxX - particle_x;
+		if (dist_from_right < 10)
+		{
+			var repulsive_force = repulsive_coeff / (dist_from_right * dist_from_right);
+			particle_ddx -= repulsive_force;
+		}
+
+		var dist_from_top = particle_y;
+		if (dist_from_top < 10)
+		{
+			var repulsive_force = repulsive_coeff / (dist_from_top * dist_from_top);
+			particle_ddy += repulsive_force;
+		}
+
+		var dist_from_left = particle_x;
+		if (dist_from_left < 10)
+		{
+			var repulsive_force = repulsive_coeff / (dist_from_left * dist_from_left);
+			particle_ddx += repulsive_force;
+		}
 
 		x_dot[index]   = particle_dx;
 		x_dot[index+1] = particle_ddx;
