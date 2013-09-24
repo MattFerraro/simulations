@@ -2,6 +2,9 @@ var all_particles = new Array();
 var gravity = -9.8;
 var maxX = 800;
 var maxY = 600;
+var num_particles = 16;
+var radius = 30;
+var spring_length = 40;
 
 function init()
 {
@@ -12,12 +15,13 @@ function init()
 	// Next initialize the state vector
 	var k = 1;
 	
-	var num_particles = 16;
 	for(var a = 0; a<num_particles; a++)
 	{
+		var angle = Math.PI * 2 / num_particles * a;
+
 		var particle = new Object();
-		particle.x = a * 20 + maxX / 2;
-		particle.y = 10 + a;
+		particle.x = maxX/2 + Math.cos(angle) * radius;
+		particle.y = maxY/2 + Math.sin(angle) * radius;
 		particle.dx = 40;
 		particle.dy = 20;
 		particle.r = 8;
@@ -28,47 +32,9 @@ function init()
 		all_particles[all_particles.length] = particle;
 		
 	}
-	
-	//anchor to the center!
-	var index = 0;
-	
-	//forward link everything
-	//index++;
-	for(var a = 0;a<num_particles;a++)
-	{
-		if (a == num_particles-1)
-			continue;
-	
-		index = all_particles[a].sprungTo.length;
-		var particle = all_particles[a];
-		particle.sprungTo[index] = new Object();
 		
-		particle.sprungTo[index].point = all_particles[a+1]//new Point(maxX/2, maxY/2);
-		
-		particle.sprungTo[index].k = 100;
-		particle.sprungTo[index].s_len = 20;
-	}
-	
-	//backward link everything!
-	for(var a = 0;a<num_particles;a++)
-	{
-		if (a == 0)
-			continue;
-		index = all_particles[a].sprungTo.length;
-		var particle = all_particles[a];
-		particle.sprungTo[index] = new Object();
-		
-		particle.sprungTo[index].point = all_particles[a-1]//new Point(maxX/2, maxY/2);
-		
-		particle.sprungTo[index].k = 100;
-		particle.sprungTo[index].s_len = 20;
-	}
-	
-
-	all_particles[0].type = 2;
-	
 	setInterval(draw, 40);
-	setInterval(update, 1);
+	setInterval(update, .25);
 	// update();
 }
 
@@ -118,7 +84,6 @@ function expand(x_hat, list_of_particles)
 
 function update()
 {
-	//console.log("updating");
 	//for loop over all of the particles and update their positions
 	update_particles();
 }
@@ -126,19 +91,18 @@ function update()
 // Propogates physics forward for all of the particles equally
 function update_particles()
 {
-	// console.log("updating");
 	// As you can see, we dispatch the hard work to the integrators.js file
 	flattened = flatten(all_particles);
 	// console.log(flattened);
-	new_x_hat = rk4(flattened, generate_derivative, .019);
+	new_x_hat = rk4(flattened, generate_derivative, .012);
 	// console.log(new_x_hat);
 	expand(new_x_hat, all_particles);
 }
 
-function distance(particleA, particleB)
+function distance(x1, x2, y1, y2)
 {
-	dx = particleB.x - particleA.x;
-	dy = particleB.y - particleA.y;
+	dx = x2 - x1;
+	dy = y2 - y1;
 	return Math.sqrt(dx*dx + dy*dy);
 }
 
@@ -151,11 +115,13 @@ function distance(particleA, particleB)
 // }
 
 var repulsive_coeff = 10000;
+var spring_coeff = 1;
 
 function generate_derivative(x_hat)
 {
 	var x_dot = [];
 	var index = 0;
+	var ball_index = 0;
 	while (index < x_hat.length)
 	{
 		var particle_x =  x_hat[index];
@@ -197,13 +163,51 @@ function generate_derivative(x_hat)
 			particle_ddx += repulsive_force;
 		}
 
+		var ball_to_left_index = ball_index - 1;
+		var ball_to_right_index = ball_index + 1;
+		if (ball_to_left_index < 0){
+			ball_to_left_index = num_particles - 1;
+		}
+		if (ball_to_right_index >= num_particles)
+		{
+			ball_to_right_index = 0;
+		}
+
+		var ball_to_left_x = x_hat[ball_to_left_index * 4];
+		var ball_to_left_y = x_hat[ball_to_left_index * 4 + 2];
+		var ball_to_left_dist_x = ball_to_left_x - particle_x;
+		var ball_to_left_dist_y = ball_to_left_y - particle_y;
+		var ball_to_left_dist = Math.sqrt(ball_to_left_dist_x * ball_to_left_dist_x + ball_to_left_dist_y * ball_to_left_dist_y);
+		var e_dist_left = ball_to_left_dist - spring_length;
+		particle_ddx += ball_to_left_dist_x / ball_to_left_dist * e_dist_left;
+		particle_ddy += ball_to_left_dist_y / ball_to_left_dist * e_dist_left;
+
+
+		var ball_to_right_x = x_hat[ball_to_right_index * 4];
+		var ball_to_right_y = x_hat[ball_to_right_index * 4 + 2];
+		var ball_to_right_dist_x = ball_to_right_x - particle_x;
+		var ball_to_right_dist_y = ball_to_right_y - particle_y;
+		var ball_to_right_dist = Math.sqrt(ball_to_right_dist_x * ball_to_right_dist_x + ball_to_right_dist_y * ball_to_right_dist_y);
+		var e_dist_right = ball_to_right_dist - spring_length;
+		particle_ddx += ball_to_right_dist_x / ball_to_right_dist * e_dist_right;
+		particle_ddy += ball_to_right_dist_y / ball_to_right_dist * e_dist_right;
+
+
+		// var e_dist_right = dist_ball_right - 30;
+		// var ball_to_right_x = x_hat[ball_to_right_index * 4];
+		// var ball_to_right_y = x_hat[ball_to_right_index * 4 + 2];
+
+		// var dist_ball_right = distance(ball_to_right_x, particle_x, ball_to_right_y, particle_y);
+
+
+
 		x_dot[index]   = particle_dx;
 		x_dot[index+1] = particle_ddx;
 		x_dot[index+2] = particle_dy;
 		x_dot[index+3] = particle_ddy;
 
 		index+=4;
-
+		ball_index++;
 	}
 	return x_dot;
 }
