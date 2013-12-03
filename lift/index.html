@@ -1,26 +1,21 @@
 <html>
 	<head>
-		<script src="matrix_math.js">
-		</script>
-	
-		<script src="wing_physics.js">
-		</script>
-
-		<script src="wing_drawing.js">
+		<script src="main.js">
 		</script>
 	</head>
 
 
 	<body onload="init();">
-		<span>
-			<div>
-				<h1>
-					Simple Wing Lift Calculator
-				</h1>
-			</div>
-			<canvas id="myCanvas" width="800" height="600" style="border:1px solid #c3c3c3;">
-			</canvas>
-		</span>
+
+		<div>
+			<h1>
+				Vector Field Plotter
+			</h1>
+		</div>
+		<input type="text" name="equation" value="xi + yj" onkeydown="keypressed();">
+		<br>
+		<canvas id="myCanvas" width="800" height="600" style="border:1px solid #c3c3c3;">
+		</canvas>
 	</body>
 	
 </html>
