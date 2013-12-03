@@ -1,10 +1,15 @@
 var all_particles = new Array();
 var gravity = -9.8;
+gravity = 0;
 var maxX = 800;
 var maxY = 600;
-var num_particles = 16;
-var radius = 30;
-var spring_length = 40;
+var num_particles = 5;
+var radius = 60;
+var spring_length = 50;
+var ball_resting_area = 1000;
+var repulsive_coeff = 10000;
+var spring_coeff = 5;
+var pressure_coeff = 10;
 
 function init()
 {
@@ -17,13 +22,13 @@ function init()
 	
 	for(var a = 0; a<num_particles; a++)
 	{
-		var angle = Math.PI * 2 / num_particles * a;
+		var angle = Math.PI * 2 - (Math.PI * 2 / num_particles * a) + Math.PI / 4;
 
 		var particle = new Object();
 		particle.x = maxX/2 + Math.cos(angle) * radius;
 		particle.y = maxY/2 + Math.sin(angle) * radius;
-		particle.dx = 40;
-		particle.dy = 20;
+		particle.dx = 0;
+		particle.dy = 10;
 		particle.r = 8;
 		particle.type = 1;
 		particle.m = 10;
@@ -34,7 +39,7 @@ function init()
 	}
 		
 	setInterval(draw, 40);
-	setInterval(update, .25);
+	setInterval(update, .25); //.25 is a good rate
 	// update();
 }
 
@@ -99,29 +104,38 @@ function update_particles()
 	expand(new_x_hat, all_particles);
 }
 
-function distance(x1, x2, y1, y2)
-{
-	dx = x2 - x1;
-	dy = y2 - y1;
-	return Math.sqrt(dx*dx + dy*dy);
-}
-
-// function Point(x, y)
-// {
-// 	var thisPoint = new Object();
-// 	thisPoint.x = x;
-// 	thisPoint.y = y;
-// 	return thisPoint;
-// }
-
-var repulsive_coeff = 10000;
-var spring_coeff = 1;
-
+var print_ind = 0;
 function generate_derivative(x_hat)
 {
+	print_ind ++;
+
 	var x_dot = [];
 	var index = 0;
 	var ball_index = 0;
+
+	var Xs = []
+	var Ys = []
+	var modulo;
+	for (var i = 0; i < x_hat.length; i++)
+	{
+		modulo = i % 4;
+		if (modulo == 0)
+		{
+			Xs.push(x_hat[i]);
+		}
+		else if (modulo == 2)
+		{
+			Ys.push(x_hat[i]);
+		}
+	}
+	var area = polygon_area(Xs, Ys);
+	var pressure = 2 * ball_resting_area / (area);
+	pressure *= pressure_coeff;
+	if (print_ind % 100 == 0)
+	{
+		console.log(area + "    " + pressure);
+	}
+
 	while (index < x_hat.length)
 	{
 		var particle_x =  x_hat[index];
@@ -179,8 +193,9 @@ function generate_derivative(x_hat)
 		var ball_to_left_dist_y = ball_to_left_y - particle_y;
 		var ball_to_left_dist = Math.sqrt(ball_to_left_dist_x * ball_to_left_dist_x + ball_to_left_dist_y * ball_to_left_dist_y);
 		var e_dist_left = ball_to_left_dist - spring_length;
-		particle_ddx += ball_to_left_dist_x / ball_to_left_dist * e_dist_left;
-		particle_ddy += ball_to_left_dist_y / ball_to_left_dist * e_dist_left;
+		var k_force_left = e_dist_left * spring_coeff;
+		particle_ddx += ball_to_left_dist_x / ball_to_left_dist * (k_force_left);
+		particle_ddy += ball_to_left_dist_y / ball_to_left_dist * (k_force_left);
 
 
 		var ball_to_right_x = x_hat[ball_to_right_index * 4];
@@ -188,18 +203,18 @@ function generate_derivative(x_hat)
 		var ball_to_right_dist_x = ball_to_right_x - particle_x;
 		var ball_to_right_dist_y = ball_to_right_y - particle_y;
 		var ball_to_right_dist = Math.sqrt(ball_to_right_dist_x * ball_to_right_dist_x + ball_to_right_dist_y * ball_to_right_dist_y);
-		var e_dist_right = ball_to_right_dist - spring_length;
-		particle_ddx += ball_to_right_dist_x / ball_to_right_dist * e_dist_right;
-		particle_ddy += ball_to_right_dist_y / ball_to_right_dist * e_dist_right;
+		var e_dist_right = ball_to_right_dist - spring_length
+		var k_force_right = e_dist_right * spring_coeff;
+		particle_ddx += ball_to_right_dist_x / ball_to_right_dist * (k_force_right);
+		particle_ddy += ball_to_right_dist_y / ball_to_right_dist * (k_force_right);
 
+		var Fn_right = ball_to_right_dist * pressure;
+		particle_ddy -= ball_to_right_dist_y / ball_to_right_dist * Fn_right;
+		particle_ddx -= ball_to_right_dist_x / ball_to_right_dist * Fn_right;
 
-		// var e_dist_right = dist_ball_right - 30;
-		// var ball_to_right_x = x_hat[ball_to_right_index * 4];
-		// var ball_to_right_y = x_hat[ball_to_right_index * 4 + 2];
-
-		// var dist_ball_right = distance(ball_to_right_x, particle_x, ball_to_right_y, particle_y);
-
-
+		var Fn_left = ball_to_left_dist * pressure;
+		particle_ddy -= ball_to_left_dist_y / ball_to_left_dist * Fn_left;
+		particle_ddx -= ball_to_left_dist_x / ball_to_left_dist * Fn_left;
 
 		x_dot[index]   = particle_dx;
 		x_dot[index+1] = particle_ddx;
@@ -213,54 +228,17 @@ function generate_derivative(x_hat)
 }
 
 
-// function generate_derivative()
-// {
-// 	//This function will take in the state (an array of objects!)
-// 	//and generates a plain old array of numbers as the derivative
-// 	output = new Array();
-// 	//console.log(gain);
-// 	for (var a = 0;a<all_particles.length;a++)
-// 	{
-// 		output[output.length] = all_particles[a].dx;
-// 		output[output.length] = all_particles[a].dy;
-		
-// 		if (all_particles[a].type == 2) //that means fixed!
-// 		{
-// 			output[output.length] = 0;//ddx - there would actually be spring logic in here :)
-// 			output[output.length] = 0;//ddy - there would actually be spring and gravity logic in here :)
-// 		}
-// 		else if (all_particles[a].type == 1)
-// 		{
-			
-// 			//we need to sum up the x and y forces from all springs:
-// 			var f_x = 0;
-// 			var f_y = 0;
-// 			for(var b = 0;b<all_particles[a].sprungTo.length;b++)
-// 			{
-// 				var temp_sprung_to = all_particles[a].sprungTo[b];
-// 				var x_dist = all_particles[a].x - temp_sprung_to.point.x;
-// 				var y_dist = all_particles[a].y - temp_sprung_to.point.y;
-// 				var dist = Math.sqrt(x_dist * x_dist + y_dist * y_dist);
-// 				var e_dist = dist - temp_sprung_to.s_len;
-// 				//console.log(e_dist);
-// 				var f_tot = -e_dist * temp_sprung_to.k;
-// 				f_x += x_dist / dist * f_tot;
-// 				f_y += y_dist / dist * f_tot;
-// 				//force in X = cos(angl) * f_total
-// 				//cos = adjacent / hypot = x_dist / dist
-// 				//force in X = adj / hypot * f_total
-// 			}
-			
-// 			a_x = f_x / all_particles[a].m;
-// 			a_y = f_y / all_particles[a].m;
-			
-// 			output[output.length] = a_x;//ddx - there would actually be spring logic in here :)
-// 			output[output.length] = a_y-gravity;//ddy - there would actually be spring and gravity logic in here :)
-// 			//maybe there would be electrostatic force logic!		
-// 		}
-		
-// 	}
-	
-// 	return output;
-// }
+// Copied from http://www.mathopenref.com/coordpolygonarea2.html
+// damn this is a cool algo
+function polygon_area(Xs, Ys)
+{
+	area = 0;           // Accumulates area in the loop
+	j = Xs.length - 1;  // The last vertex is the 'previous' one to the first
 
+	for (i = 0; i < Xs.length; i++)
+	{
+		area = area + (Xs[j]+Xs[i]) * (Ys[j]-Ys[i]);
+		j = i;  //j is previous vertex to i
+	}
+	return area/2;
+}
