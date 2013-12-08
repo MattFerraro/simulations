@@ -89,6 +89,12 @@ function renderField() {
 			var headlen = .02;   // length of head
 		    var angle = Math.atan2(y_f - y, x_f - x);
 
+		    if (Math.abs(x_f - x) < .00000001) {
+		    	if (Math.abs(y_f - y) < .00000001) {
+		    		continue;
+		    	}
+		    }
+
 		    var arrow_x_0 = x_f - headlen * Math.cos(angle - Math.PI/6);
 		    var arrow_y_0 = y_f - headlen * Math.sin(angle - Math.PI/6);
 		    context.lineTo(arrow_x_0, arrow_y_0);

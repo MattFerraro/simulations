@@ -5,23 +5,29 @@
 
 		<script src="main.js">
 		</script>
+
+		<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
 	</head>
 
 
 	<body onload="main_init();">
-		<div>
-			<h1>
-				Vector Field Grapher
-			</h1>
+		<div class="col-md-12">
+			<div class="row">
+				<div class="col-md-10">
+					<canvas id="myCanvas" width="600" height="600" style="border:1px solid #c3c3c3;">
+					</canvas>
+				</div>
+				<div class="col-md-2">
+					<input type="text" id="eq_1" value="y" onkeydown="keypressed();">
+					<label>i</label>
+					<br>
+					<input type="text" id="eq_0" value="x" onkeydown="keypressed();">
+					<label>j</label>
+					<br>
+					<button type="button" onclick="renderEverything();">Draw</button>
+				</div>
+			</div>
 		</div>
-		<input type="text" id="eq_0" value="x" onkeydown="keypressed();">
-		<label>i</label>
-		<input type="text" id="eq_1" value="y" onkeydown="keypressed();">
-		<label>j</label>
-		<button type="button" onclick="renderEverything();">Draw</button>
-		<br>
-		<canvas id="myCanvas" width="600" height="600" style="border:1px solid #c3c3c3;">
-		</canvas>
 	</body>
 	
 </html>
