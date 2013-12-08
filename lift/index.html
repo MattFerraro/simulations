@@ -1,20 +1,26 @@
 <html>
 	<head>
+		<script src="math.min.js">
+		</script>
+
 		<script src="main.js">
 		</script>
 	</head>
 
 
-	<body onload="init();">
-
+	<body onload="main_init();">
 		<div>
 			<h1>
-				Vector Field Plotter
+				Vector Field Grapher
 			</h1>
 		</div>
-		<input type="text" name="equation" value="xi + yj" onkeydown="keypressed();">
+		<input type="text" id="eq_0" value="x" onkeydown="keypressed();">
+		<label>i</label>
+		<input type="text" id="eq_1" value="y" onkeydown="keypressed();">
+		<label>j</label>
+		<button type="button" onclick="renderEverything();">Draw</button>
 		<br>
-		<canvas id="myCanvas" width="800" height="600" style="border:1px solid #c3c3c3;">
+		<canvas id="myCanvas" width="600" height="600" style="border:1px solid #c3c3c3;">
 		</canvas>
 	</body>
 	
